@@ -1,0 +1,6 @@
+@AuthTemplate.IdentityJwt_HostAddress = http://localhost:5003
+
+GET {{AuthTemplate.IdentityJwt_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
