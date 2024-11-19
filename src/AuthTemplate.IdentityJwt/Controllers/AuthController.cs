@@ -74,15 +74,16 @@ public class AuthController(
             new Claim(JwtRegisteredClaimNames.Email, user.Email)
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("my_epicly_really_long_super_secret_key"));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: "Jwt:Issuer",
-            audience: "Jwt:Audience",
-            claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
-            signingCredentials: creds);
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity([new Claim("id", "1")]),
+            Expires = DateTime.UtcNow.AddHours(1),
+            //Claims = claims,
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+        var token = tokenHandler.CreateToken(tokenDescriptor);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }

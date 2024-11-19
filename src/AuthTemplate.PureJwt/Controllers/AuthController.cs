@@ -10,11 +10,15 @@ using AuthTemplate.Data;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Text;
+using AuthTemplate.PureJwt.Options;
+using Microsoft.Extensions.Options;
 
 namespace AuthTemplate.PureJwt.Controllers;
 [ApiController]
-public class AuthController(PureDbContext DbContext, ILogger<AuthController> Logger) : ControllerBase
+public class AuthController(PureDbContext DbContext, ILogger<AuthController> Logger, IOptionsSnapshot<JwtSettings> JwtOptions) : ControllerBase
 {
+    private readonly JwtSettings _jwtSettings = JwtOptions.Value;
+
     [HttpPost("api/v1/Auth/Register")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -79,15 +83,16 @@ public class AuthController(PureDbContext DbContext, ILogger<AuthController> Log
             new Claim(JwtRegisteredClaimNames.Email, user.Email)
         };
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("my_epicly_really_long_super_secret_keyy"));
-        var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-        var token = new JwtSecurityToken(
-            issuer: "Jwt:Issuer",
-            audience: "Jwt:Audience",
-            claims: claims,
-            expires: DateTime.Now.AddMinutes(30),
-            signingCredentials: creds);
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var key = Encoding.ASCII.GetBytes(_jwtSettings.Secret);
+        var tokenDescriptor = new SecurityTokenDescriptor
+        {
+            Subject = new ClaimsIdentity([new Claim("id", "1")]),
+            Expires = DateTime.UtcNow.AddHours(1),
+            //Claims = claims,
+            SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+        };
+        var token = tokenHandler.CreateToken(tokenDescriptor);
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
